@@ -1,38 +1,52 @@
 
-class Car { // Need to ask if registration numbre are natural numbers
-  var RegistrationNumber: int
+class {:autocontracts} CarPark {
 
-  constructor(registrationNumber: nat)
+  const MAX_CAPACITY: int
+  const MIN_FREE_SPACES := 5
+
+  var reservedArea: set<nat>
+  var nonReservedArea: set<nat>
+  var reservedCapacity: int
+  var nonReservedCapacity: int
+
+  var nonReservedFreeSpaces: int
+  var reservedFreeSpaces: int
+
+  var isWeekday: bool
+  var subscription: set<nat>
+
+  var entryBarrier: bool
+
+
+  constructor(maxSize: nat, maxNonReserved:nat, maxReserved: nat) // Takes a non-negative integer for the carpark spaces
+    requires maxNonReserved > 5
+    requires maxSize == (maxNonReserved + maxReserved)
+
+    ensures isWeekday == true
+    ensures |reservedArea| == 0
+    ensures |nonReservedArea| == 0
+    ensures |subscription| == 0
   {
-    RegistrationNumber := registrationNumber;
-  }
-}
+    MAX_CAPACITY := maxSize;
+    nonReservedCapacity := maxNonReserved;
+    reservedCapacity := maxReserved;
 
-class CarPark {
-  var Capacity: int // Records the fixed-size collection of spaces
-  var NonReservedSpaces: int // Records the NonReservedSpaces amount
-  
+    isWeekday := true;
 
-  constructor(maxSize: nat) // Takes a non-negative integer for the carpark spaces
-    requires maxSize > 0
-    ensures Capacity == maxSize && NonReservedSpaces == 0 // Value assigned to capacity must be what is being passed in
-  {
-    Capacity := maxSize;
-    NonReservedSpaces := 0;
+    reservedArea := {};
+    nonReservedArea := {};
+    subscription := {};
   }
-  
+
+
   // Function to check the availability of non-reserved spaces
-  function checkAvailability(): int  // to report on the number of non-reserved free spaces currently available 
-  reads this
-  requires NonReservedSpaces >= 0 && NonReservedSpaces <= Capacity
-  ensures 0 <= NonReservedSpaces
-  // ensures NonReservedSpaces > 0
-  {
-    NonReservedSpaces
-    // Logic to return the number of non-reserved free spaces currently available
-      // Logic to return the number of non-reserved free spaces currently available
-      // Do not modify state variables
-  }
+  // method checkAvailability() returns (available: int)  // to report on the number of non-reserved free spaces currently available
+  // {
+  //   // available;
+  //   // Logic to return the number of non-reserved free spaces currently available
+  //   // Logic to return the number of non-reserved free spaces currently available
+  //   // Do not modify state variables
+  // }
 
 
   // // Function to close the car park
@@ -49,24 +63,71 @@ class CarPark {
   //     // Return t+rue when the state invariant(s) hold
   // }
 
-  // Methods (with side effects)
-  method enterCarPark() // to allow any car without reservation to enter the car park
-  modifies this
-  requires NonReservedSpaces < Capacity
-  ensures NonReservedSpaces == old(NonReservedSpaces) + 1
-  && NonReservedSpaces <= Capacity
+  // IT just checks the space, otherwise returns false
+  // function isBarrierOpen(): bool
+  // {
+  //   // Implement logic to determine if the barrier is open
+  //   // For simplicity, returning true here, assuming the barrier is always open
+  //   entryBarrier
+  // }
+
+  ghost predicate Valid()
+    reads this
   {
-    NonReservedSpaces := NonReservedSpaces + 1;
-    // Track the registration number
-    //  Check if there is a space
-    // Enter the car park
+    // 10
+    // First Barrier needs to open for cars as long as it is not full (demed to full when 5 spaces available)
+    |nonReservedArea| < (nonReservedCapacity - 5) 
+    // |nonReservedArea| < (nonReservedCapacity - 5)
+    // true
+    // && (|nonReservedArea| + |reservedArea|) <= MAX_CAPACITY
+  }
 
 
+  // To allow any car without a reservation to enter the car park
+  // 
+  // Cars can enter the carpark as long as it is not full, it is full if 5 spaces are left
+  // The system needs  to know how many non-reserved spaces are available
 
+  method enterCarPark(carID: nat) returns (success: bool)
+    // requires |nonReservedArea| < (nonReservedCapacity - 5)
 
+    // requires carID !in old(nonReservedArea)
+    // requires ||
+    // requires carID !in nonReservedArea && carID !in reservedArea
+    // requires |nonReservedArea| < MAX_CAPACITY - MIN_FREE_SPACES && |nonReservedArea| < nonReservedCapacity - MIN_FREE_SPACES
+    // requires |nonReservedArea| < nonReservedCapacity - MIN_FREE_SPACES
 
-    // Logic to allow any car without a reservation to enter the car park
-    // Update state variables accordingly
+    // modifies this
+    // ensures carID in nonReservedArea || (carID in reservedArea && !isWeekday)
+    // ensures nonReservedArea == old(nonReservedArea) + {carID}
+    // // ensures nonReservedArea == old(nonReservedArea)
+    // ensures subscription == old(subscription)
+    // ensures |nonReservedArea| > 0
+    // ensures isWeekday == old(isWeekday)
+
+    // Car has been added or Car hasn't been added
+    // ensures carID in nonReservedArea  ==> success // Ensures the car has been successfully added in Non-Reserved Area
+    // ensures old(nonReservedArea) != nonReservedArea
+    ensures old(|nonReservedArea|) == (|nonReservedArea| + 1) ==> success && nonReservedArea == old(nonReservedArea) + {carID}
+    // ensures old(|nonReservedArea|) == |nonReservedArea| ==> !success && nonReservedArea == old(nonReservedArea)
+    // ensures old(nonReservedArea) == nonReservedArea + {carID} // Ensures
+    // ensures subscription == old(subscription) // Ensures no changes have been made to subscription
+    // ensures old(|nonReservedArea|) == |nonReservedArea| + 1
+  {
+    print(|nonReservedArea| < (nonReservedCapacity - 5));
+    // nonReservedArea := nonReservedArea + {carID}; // Adding a car to the non reserved area
+    success := true;
+    // if (|nonReservedArea| < (nonReservedCapacity - 5))
+    // {
+    //   print(|nonReservedArea| < (nonReservedCapacity - 5));
+    //   nonReservedArea := nonReservedArea + {carID}; // Adding a car to the non reserved area
+    //   success := true;
+    // }
+    // else {
+    //   success := false;
+    // }
+
+    // success := false;
   }
 
 
@@ -74,7 +135,7 @@ class CarPark {
 
 
 
-// Method to allow any car without a reservation to enter the car park
+  // Method to allow any car without a reservation to enter the car park
   // method enterCarPark()
   //   modifies NonReservedSpaces
   //   ensures NonReservedSpaces > 0 && NonReservedSpaces <= Capacity
@@ -111,7 +172,7 @@ class CarPark {
     // Logic to remove parking restrictions on the reserved spaces during the weekend
     // Update state variables accordingly
   }
-  
+
 
 
 }
@@ -119,5 +180,11 @@ class CarPark {
 
 method Main()
 {
-  var cp: CarPark := new CarPark(5);
+  var fullCarParkCapacity := 11;
+  var nonReservedCarParkCapacity := 6;
+  var reservedCarParkCapacity := 5;
+
+  var cp: CarPark := new CarPark(fullCarParkCapacity, nonReservedCarParkCapacity, reservedCarParkCapacity);
+  var a := cp.enterCarPark(5);
+  // var b := cp.enterCarPark(10);
 }
