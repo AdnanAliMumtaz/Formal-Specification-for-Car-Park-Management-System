@@ -61,10 +61,10 @@ class {:autocontracts} CarPark {
     ensures isWeekend ==> (availablity == (MAX_CAPACITY - (|nonReservedArea| + |reservedArea|))) // Ensures that if it is a weekend, it returns the spaces available in nonreserved and reserved areas.
 
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend) // Ensures isWeekend isn't changed after the excution of method
-    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedAre isn't changed after the excution of method
-    ensures reservedArea == old(reservedArea) // Ensures reservedArea isn't changed after the excution of method
-    ensures subscription == old(subscription) // Ensures subscription isn't changed after the excution of method
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains after the excution of method
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedAre remains unchanged after the excution of method
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the excution of method
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the excution of method
   {
     if (isWeekend)
     {
@@ -114,162 +114,205 @@ class {:autocontracts} CarPark {
       success := true;
     }
     else {
-              // If not eligible, set success to false.
+      // If not eligible, set success to false.
       success := false;
     }
   }
 
   // To allow any car from any area to leave the car park
   method leaveCarPark(carID: nat) returns(left: bool)
-  // There must be a car in a reserved or non-reserved area, if it wants to leave.
-  // If there is a car in reserevd, it should leave, but the non-reserved remains unchanged.
-  // If there is a car in non-reserevd, it should leave, but the resrevd remains unchanged.
-  requires true
+    // There must be a car in a reserved or non-reserved area, if it wants to leave.
+    // If there is a car in reserevd, it should leave, but the non-reserved remains unchanged.
+    // If there is a car in non-reserevd, it should leave, but the resrevd remains unchanged.
+    requires true
     modifies this
 
     // Good Cases
     ensures carID in old(nonReservedArea) ==> left && nonReservedArea == old(nonReservedArea) - {carID} && reservedArea == old(reservedArea) // Ensures removal of the car from the non-reserved area if it was initially parked there, and reserved area remains unchanged.
     ensures carID in old(reservedArea) ==> left && reservedArea == old(reservedArea) - {carID} && nonReservedArea == old(nonReservedArea) // Ensures removal of the car from the reserved area if it was initially parked there, and non-reserved area remains unchanged.
-    
+
     // Bad Casses - nonReserved/reserved
     ensures carID !in old(nonReservedArea) && carID !in old(reservedArea) ==> !left // Ensures that if the car wasn't initially parked in either area, no car leaves.
     ensures !left ==> nonReservedArea == old(nonReservedArea) && reservedArea == old(reservedArea) // Ensures that if the car didn't leave, the non-reserved and reserved area remain unchanged.
-    
+
     // Preservation of Other State Properties
     ensures isWeekend == old(isWeekend) // Ensures isWeekend remains unchanged after the method execution.
     ensures subscription == old(subscription) // Ensures subscription remains unchanged after the method execution.
   {
     if (carID in nonReservedArea) // Check if the car is in non-reserved area
     {
-        // Remove the car from the non-reserved area and set left to true.
+      // Remove the car from the non-reserved area and set left to true.
       nonReservedArea := nonReservedArea - {carID};
       left := true;
     }
-    else if (carID in reservedArea) // Check if the car is in reserved area 
+    else if (carID in reservedArea) // Check if the car is in reserved area
     {
-        // Remove the car from the reserved area and set left to true.
+      // Remove the car from the reserved area and set left to true.
       reservedArea := reservedArea - {carID};
       left := true;
     }
-    else  
+    else
     {
-        // Car was not found in either area, set left to false.
+      // Car was not found in either area, set left to false.
       left := false;
     }
   }
 
   // To allow a car with a subscription to enter the car park’s reserved area on a weekday, or to enter the car park generally on a weekend day.
-  method enterReservedCarPark(carID: nat) returns (entered: bool)
+  method enterReservedCarPark(carID: nat) returns (success: bool) // --DONE
+    requires true
     modifies this
 
     // Good Cases
-    ensures !isWeekend && carID !in old(nonReservedArea) && carID !in old(reservedArea) && carID in old(subscription) && (old(|reservedArea|)  < reservedCapacity) ==> entered
-    ensures isWeekend && carID !in old(nonReservedArea) && carID !in old(reservedArea) && old(|reservedArea|) < reservedCapacity  ==> entered
-    ensures entered ==> reservedArea == old(reservedArea) + {carID}
+    ensures ((!isWeekend) && // If it is a weekday
+             (carID !in old(nonReservedArea)) && // Ensures car is not be already parked in non-reserved area.
+             (carID !in old(reservedArea)) && // Ensures car is not be already parked in reserved area.
+             (carID in old(subscription)) && // Ensures car has a subscription before entering the reserved area.
+             (old(|reservedArea|)  < reservedCapacity)) ==> success // Ensures the reservedArea has a space to allow car entry.
+
+    ensures ((isWeekend) && // If it is a weekend
+             (carID !in old(nonReservedArea)) && // Ensures car is not be already parked in non-reserved area.
+             (carID !in old(reservedArea)) && // Ensures car is not be already parked in reserved area.
+             (old(|reservedArea|) < reservedCapacity)) ==> success // Ensures the reservedArea has a space to allow car entry.
+
+    ensures success ==> reservedArea == old(reservedArea) + {carID}  // Ensures upon a successful entry operation, a car has been added to the reserved area.
 
     // Bad Cases
-    ensures carID in old(nonReservedArea) ==> !entered
-    ensures carID in old(reservedArea) ==> !entered
-    ensures !isWeekend && carID !in old(subscription) ==> !entered
-    ensures old(|reservedArea|) >= reservedCapacity ==> !entered
-    ensures !entered ==> reservedArea == old(reservedArea)
+    ensures carID in old(nonReservedArea) ==> !success // Ensures a car already parked in non-reserved area cannot enter again.
+    ensures carID in old(reservedArea) ==> !success // // Ensures a car already parked in reserved area cannot enter again.
+    ensures !isWeekend && carID !in old(subscription) ==> !success // Ensures a car on weekday with no subscription cannot enter.
+    ensures old(|reservedArea|) >= reservedCapacity ==> !success // Ensures no car can enters if the reserved area is full.
+    ensures !success ==> reservedArea == old(reservedArea) // Ensures non-reserved area remains unchanged if entry fails.
 
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend)
-    ensures nonReservedArea == old(nonReservedArea)
-    ensures subscription == old(subscription)
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains unchanged after the method execution.
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedArea remains unchanged after the method execution.
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the method execution.
   {
-    if (!isWeekend && carID in subscription && carID !in reservedArea && carID !in nonReservedArea && |reservedArea| < reservedCapacity)
+    if ((!isWeekend) && // On weekday
+        (carID in subscription) && // Check if car has a subscription
+        (carID !in reservedArea) && // Check if car isn't parked in reservedArea
+        (carID !in nonReservedArea) && // Check if car isn't parked in nonReservedArea
+        (|reservedArea| < reservedCapacity)) // Check if reservedArea has available space.
     {
+      // Add the car to the reserved area and set success to true.
       reservedArea := reservedArea + {carID};
-      entered := true;
+      success := true;
     }
-    else if (isWeekend && carID !in reservedArea && carID !in nonReservedArea && |reservedArea| < reservedCapacity)
+    else if ((isWeekend) && // On weekend
+             (carID !in reservedArea) && // Check if car isn't parked in reservedArea
+             (carID !in nonReservedArea) && // Check if car isn't parked in nonReservedArea
+             (|reservedArea| < reservedCapacity)) // Check if reservedArea has available space.
     {
+      // Add the car to the reserved area and set success to true.
       reservedArea := reservedArea + {carID};
-      entered := true;
+      success := true;
     }
     else {
-      entered := false;
+      // Set success to false if conditions are not met.
+      success := false;
     }
   }
 
-  // // Logic to allow a car to be registered as having a reserved space when the owner pays the subscription
-  method makeSubscription(carID: nat) returns(registered: bool)
-    // requires |subscription| < |reservedArea|
+  // To allow a car to be registered as having a reserved space when the owner pays the subscription - as long as subscriptions are available.
+  method makeSubscription(carID: nat) returns(registered: bool) // --MayNeedSomeWork
+    // subscriptions must have a space, and it should less than or equal to the reservedArea capacity
+    // same car can not make the subscription again
+    // the car trying to make a subscription must not be parked in the non-reserved
+
+    requires true
     modifies this
 
     // Good Cases
-    ensures carID !in old(subscription) && carID !in old(nonReservedArea) && carID !in old(reservedArea) && old(|subscription|) < reservedCapacity ==> registered
-    ensures registered ==> subscription == old(subscription) + {carID}
+    ensures ((carID !in old(subscription)) && // Ensures the car doesn't already have a subscription.
+             (carID !in old(nonReservedArea)) && // Ensures the car isn't parked in the non-Reserved already.
+             (carID !in old(reservedArea)) && // Ensures the car isn't parked in the reservedArea already.
+             (old(|subscription|) < reservedCapacity)) ==> registered // Ensures subscription can only be made within the reserved capacity.
+    ensures registered ==> subscription == old(subscription) + {carID} // Ensures upon a successful subscription operations, a car has been added to the subscriptions.
+    // NOTE: Didn't add the car !in old(reservedArea) above, because a car on weekend parked in a reserved area, which isn't reserved on weekend can make a subscription.
 
     // Bad Cases
-    ensures carID in old(subscription) ==> !registered
-    ensures carID in old(nonReservedArea) ==> !registered
-    ensures carID in old(reservedArea) ==> !registered
-    ensures old(|subscription|) >= reservedCapacity ==> !registered
-    ensures !registered ==> subscription == old(subscription)
+    ensures carID in old(subscription) ==> !registered // Ensures car is not registered if already subscribed.
+    ensures carID in old(nonReservedArea) ==> !registered // Ensures car is not registered if already parked in non-reserved area.
+    ensures carID in old(reservedArea) ==> !registered // Ensures car is not registered if already parked in a reserved area.
+    ensures old(|subscription|) >= reservedCapacity ==> !registered // Ensures subscription cannot be made if the size of subscriptions it exceeds the reserved capacity.
+    ensures !registered ==> subscription == old(subscription) // Ensures if not registered, subscriptions remains unchanged.
 
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend)
-    ensures nonReservedArea == old(nonReservedArea)
-    ensures reservedArea == old(reservedArea)
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains unchanged after the method execution.
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedArea remains unchanged after the method execution.
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the method execution.
   {
-    if ( carID !in subscription && carID !in nonReservedArea && carID !in reservedArea && |subscription| < reservedCapacity)
+    if ( (carID !in subscription) && // Check if the car isn't already subscribed
+         (carID !in nonReservedArea) && // Check if the car isn't already parked in nonReservedArea
+        //  (carID !in)
+         (|subscription| < reservedCapacity)) // Check if the size of subscriptions is within the reserved capacity.
     {
+      // Add the car to the subscription list and set registered to true.
       subscription := subscription + {carID};
       registered := true;
     }
     else{
+      // Set registered to false if conditions are not met.
       registered := false;
     }
   }
 
   // To remove parking restrictions on the reserved spaces (at the weekend).
   method openReservedArea() returns (open: bool)
+    requires true
     modifies this
 
     // Good Cases
-    ensures old(isWeekend) == false ==> open
-    ensures open ==> isWeekend == true
+    ensures old(isWeekend) == false ==> open // Ensures if it's not previously the weekend, it is open.
+    ensures open ==> isWeekend == true // Ensures if its open, it's the isWeekend.
 
     //Bad Cases
-    ensures old(isWeekend) == true ==> !open
-    ensures !open ==> old(isWeekend) == isWeekend
+    ensures old(isWeekend) == true ==> !open // Ensures if it's already weekend, it is not open, because it is already open.
+    ensures !open ==> old(isWeekend) == isWeekend // Ensures that if it's not open, isWeekend remains unchanged.
 
     // Preservation of Other State Properties
-    ensures nonReservedArea == old(nonReservedArea)
-    ensures reservedArea == old(reservedArea)
-    ensures subscription == old(subscription)
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedArea remains unchanged after the method execution.
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the method execution.
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the method execution.
   {
     if (isWeekend == false)
     {
+      // If it's not already the weekend, set isWeekend to true and open to true.
       isWeekend := true;
       open := true;
     }
     else {
+      // If it's already the weekend, set open to false.
       open := false;
     }
   }
 
   // To remove and crush remaining parked cars at closing time
   method closeCarPark()
+    requires true
     modifies this
 
     // Good Cases
-    ensures nonReservedArea == {}
-    ensures reservedArea == {}
-    ensures isWeekend == false
+    ensures nonReservedArea == reservedArea == {} // Ensures both non-reserved and reserved areas are empty after closing the car park.
+    ensures isWeekend == false // Ensures it's not the weekend after closing the car park.
 
     // Preservation of Other State Properties
-    ensures subscription == old(subscription)
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after closing the car park.
   {
     nonReservedArea := {};
     reservedArea := {};
     isWeekend := false;
   }
 
-  method PrintBasicPlan()
+  method PrintStarterPlan()
+    requires true
+
+    // Preservation of Other State Properties
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains after the excution of method
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedAre remains unchanged after the excution of method
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the excution of method
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the excution of method
   {
     print("\nCarPark Max Capacity: ");
     print(MAX_CAPACITY);
@@ -283,21 +326,23 @@ class {:autocontracts} CarPark {
   }
 
   method PrintParkingPlan()
+    requires true
+
+    // Preservation of Other State Properties
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains after the excution of method
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedAre remains unchanged after the excution of method
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the excution of method
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the excution of method
   {
-    // var nonReservedSpace := checkAvailability();
     print("Current CarPark Status");
     print("\n>Non-Reserved Area: ");
     print(nonReservedArea);
-    // print("   Spaces Left[");
-    // print(nonReservedSpace);
-    // print("]");
     print("\n");
     print(">Reserved Area: ");
     print(reservedArea);
     print("\n");
     print(">Current Subscriptions: ");
     print(subscription);
-    // print("\n");
   }
 }
 
@@ -311,7 +356,7 @@ method Main()
   print("====================================\n");
   print("               CarPark              \n");
   print("====================================");
-  cp.PrintBasicPlan();
+  cp.PrintStarterPlan();
 
   ////////////// Testing the enterCarPark()
   ////// Testing if the car can enter the non-reserved area
