@@ -80,11 +80,7 @@ class {:autocontracts} CarPark {
   // To allow any car without a reservation to enter the car park
   // It will allow any car without a reservation to enter the carpark regardless of a weekend or weekday
   // 
-  method enterCarPark(carID: nat) returns(success: bool)
-    // Cars must be without the subscription
-    // Non-reserved area must not be full (Atleast 5 spaces should be remaining)
-    // Cars must not be already in nonReserved Area or Reserved Area
-
+  method enterCarPark(carID: nat) returns(success: bool) // --DONE
     requires true
     modifies this
 
@@ -125,31 +121,39 @@ class {:autocontracts} CarPark {
 
   // To allow any car from any area to leave the car park
   method leaveCarPark(carID: nat) returns(left: bool)
+  // There must be a car in a reserved or non-reserved area, if it wants to leave.
+  // If there is a car in reserevd, it should leave, but the non-reserved remains unchanged.
+  // If there is a car in non-reserevd, it should leave, but the resrevd remains unchanged.
+  requires true
     modifies this
 
     // Good Cases
-    ensures carID in old(nonReservedArea) ==> left && nonReservedArea == old(nonReservedArea) - {carID}
-    ensures carID in old(reservedArea) ==> left && reservedArea == old(reservedArea) - {carID}
-
+    ensures carID in old(nonReservedArea) ==> left && nonReservedArea == old(nonReservedArea) - {carID} && reservedArea == old(reservedArea) // Ensures removal of the car from the non-reserved area if it was initially parked there, and reserved area remains unchanged.
+    ensures carID in old(reservedArea) ==> left && reservedArea == old(reservedArea) - {carID} && nonReservedArea == old(nonReservedArea) // Ensures removal of the car from the reserved area if it was initially parked there, and non-reserved area remains unchanged.
+    
     // Bad Casses - nonReserved/reserved
-    ensures carID !in old(nonReservedArea) && carID !in old(reservedArea) ==> !left
-    ensures !left ==> nonReservedArea == old(nonReservedArea)
-    ensures !left ==> reservedArea == old(reservedArea)
-
+    ensures carID !in old(nonReservedArea) && carID !in old(reservedArea) ==> !left // Ensures that if the car wasn't initially parked in either area, no car leaves.
+    ensures !left ==> nonReservedArea == old(nonReservedArea) && reservedArea == old(reservedArea) // Ensures that if the car didn't leave, the non-reserved and reserved area remain unchanged.
+    
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend)
-    ensures subscription == old(subscription)
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains unchanged after the method execution.
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the method execution.
   {
-    if (carID in nonReservedArea)
+    if (carID in nonReservedArea) // Check if the car is in non-reserved area
     {
+        // Remove the car from the non-reserved area and set left to true.
       nonReservedArea := nonReservedArea - {carID};
       left := true;
     }
-    else if (carID in reservedArea) {
+    else if (carID in reservedArea) // Check if the car is in reserved area 
+    {
+        // Remove the car from the reserved area and set left to true.
       reservedArea := reservedArea - {carID};
       left := true;
     }
-    else {
+    else  
+    {
+        // Car was not found in either area, set left to false.
       left := false;
     }
   }
