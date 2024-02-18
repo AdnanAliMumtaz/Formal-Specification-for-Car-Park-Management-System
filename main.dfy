@@ -320,7 +320,7 @@ class {:autocontracts} CarPark {
     print("\n");
     print("Reserved Max Capacity: ");
     print(reservedCapacity);
-    print("\n-----------------------------");
+    // print("\n-----------------------------");
   }
 
   method PrintParkingPlan()
@@ -332,6 +332,7 @@ class {:autocontracts} CarPark {
     ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the excution of method
     ensures subscription == old(subscription) // Ensures subscription remains unchanged after the excution of method
   {
+    print("\n\n");
     print("Current CarPark Status");
     print("\n>Non-Reserved Area: ");
     print(nonReservedArea);
@@ -355,6 +356,8 @@ method Main()
   print("               CarPark              \n");
   print("====================================");
   cp.PrintStarterPlan();
+    print("\n-----------------------------\n");
+
 
   ////////////// Testing the enterCarPark()
   ////// Testing if the car can enter the non-reserved area
@@ -362,15 +365,17 @@ method Main()
   var carID1 := cp.enterCarPark(5);
   print("-carID1(5) has entered the Non-Reserved Area: ");
   print(carID1);
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
 
-  ////// Testing if the same car can enter the carpark twice
+  ////// Testing if the same car can enter the non-reserved area again
   print("TEST 2 \n");
   var carID1Duplicate := cp.enterCarPark(5);
   print("-carID1(5) has entered the Non-Reserved Area: ");
   print(carID1Duplicate);
   print(" (fails as the same car tries to enter again)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////// Testing if the non-reserved are is deemed to be full when 5 spaces are left
@@ -386,15 +391,22 @@ method Main()
   print("\n");
   print("-carID4(21) has entered the Non-Reserved Area: ");
   print(carID4);
-  print(" (fails because only 5 spaces are left in the non-reserved area)");
-  // print("\n");
+  print(" (fails as only 5 spaces are remaining in the non-reserved area)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
-  ////// Testing if the car with subscription can enter the non-reserved carpark -- CONFIRMED
+  ////// Testing if the car with subscription can enter the non-reserved carpark
   print("TEST 4\n");
-  //Making two cars leave to make a space in the carpark
+
+  //Making two cars leave from non-reserved carpark to make a space, also test whether a car leave the non-reserved area.
+  var carID2Leaving := cp.leaveCarPark(12);
   var carID3Leaving := cp.leaveCarPark(19);
-  var carID4Leaving := cp.leaveCarPark(19);
+  print("-carID2(12) has left the carpark: ");
+  print(carID2Leaving);
+  print("\n");
+  print("-carID3(19) has left the carpark: ");
+  print(carID3Leaving);
+  print("\n");
 
   // Making a subscription for the car
   var carID5Subscription := cp.makeSubscription(9);
@@ -402,110 +414,117 @@ method Main()
   print(carID5Subscription);
   print("\n");
 
+  // Attempting to enter a car with subscription
   var carID5 := cp.enterCarPark(9);
   print("-carID5(9) has entered the Non-Reserved Area: ");
   print(carID5);
-  print(" (fails to enter because it has a subscription-reserved Space)");
-  print("\n-----------------------------\n");
-
+  print(" (fails to enter as it has a subscription for reserved space)");
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
-
-
-
   ////////////// Testing the leaveCarPark()
-  ////// Testing if a car not parked in the park can leave
+  ////// Testing if a car that isn't parked in the park can leave
   print("TEST 5\n");
   var carID5Left := cp.leaveCarPark(9);
   print("-carID5(9) has left the carPark: ");
   print(carID5Left);
   print(" (fails to leave as their is no carID5(9) car in the carpark)");
-  print("\n");
-  print("\n-----------------------------\n");
-
-  ////// Testing if a car parked in a non-reserved area can leave
-  print("TEST 6\n");
-  var carID2Left := cp.leaveCarPark(12);
-  print("-carID2(12) has left the carpark(Non-Reserved Area): ");
-  print(carID2Left);
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////// Testing if a car parked in a reserved area can leave
-  print("TEST 7\n");
+  print("TEST 6\n");
+
+  // Entering the car in the reserved area
   var carID6 := cp.enterReservedCarPark(9);
-  print("-carID6(9) has entered the Non-Reserved Area: ");
+  print("-carID6(9) has entered the Reserved Area: ");
   print(carID6);
+  print("\n");
+
+  // Makeing a car leave from the reserved area
+  var carID6Left := cp.leaveCarPark(9);
+  print("-carID6(9) has left the carPark: ");
+  print(carID6Left);
+
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////////////// Testing the checkAvailability()
-  ////// Testing if the availability status is correct on Weekday -- MAYNEEDSOMEWORK
-  print("TEST 8\n");
+  ////// Testing if the availability status is correct on Weekday
+  print("TEST 7\n");
+  cp.PrintStarterPlan();
+  print("\n");
+
   var nonReservedAvailability := cp.checkAvailability();
   print("Current Non-Reserved Area Availability (on Weekday): ");
   print(nonReservedAvailability);
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////////////// Testing the makeSubscription()
   ////// Testing if it can make a subscription twice for the same car
-  print("TEST 9\n");
+  print("TEST 8\n");
   var carID6Subscription := cp.makeSubscription(9);
   print("-carID6(9) has registered as having a reserved space: ");
   print(carID6Subscription);
-  print(" (fails to make a subscription, because it already has a subscription)");
+  print(" (fails to make a subscription as it already has a subscription)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
-  ////// Testing if it can make a subscription for car already parked in non-reserved area -- CONFIRMED
-  print("TEST 10\n");
+  ////// Testing if it can make a subscription for car already parked in non-reserved area
+  print("TEST 9\n");
   var carID1Subscription := cp.makeSubscription(5);
   print("-carID1(5) has registered as having a reserved space: ");
   print(carID1Subscription);
   print(" (fails to make a subscription, because it is already parked in Non-Reserved Area)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
-
-
-
 
   ////////////// Testing the enterReservedCarPark()
   ////// Testing if car without a subscription can enter the reserved area.
-  print("TEST 11\n");
+  print("TEST 10\n");
   var carID7 := cp.enterReservedCarPark(231);
   print("-carID7(231) has entered the Reserved Area: ");
   print(carID7);
-  print(" (fails to enter because doesn't have subscription)");
+  print(" (fails to enter as doesn't have subscription)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////// Testing if car is already parked in a reserved can enter again
-  print("TEST 12\n");
+  print("TEST 11\n");
   var carID8 := cp.enterReservedCarPark(9);
+  print("-carID8(9) has entered the Reserved Area: ");
+  print(carID8);
+  print("\n");
   var carID8Duplicate := cp.enterReservedCarPark(9);
   print("-carID8(9) has entered the Reserved Area: ");
   print(carID8Duplicate);
-  print(" (fails because same car can't enter again)");
+  print(" (fails because same car can't enter reserved area again)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
-  ////// Testing if a car without the subscription can enter the reserved area on weekend -- NEEDSOMEWORK
-  print("TEST 13\n");
+  ////// Testing if a car without the subscription can enter the reserved area on weekend
+  print("TEST 12\n");
   var isReservedOpen := cp.openReservedArea();
   var carID9 := cp.enterReservedCarPark(98);
   print("-carID9(98) has entered the Reserved Area: ");
   print(carID9);
   print(" (enters without making a subscription, because it is a Weekend!)");
+  cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////////////// Testing the openReservedArea()
   ////// Testing if it can open reserved area if it already opened -- NEEDSOMEWORK
-  print("TEST 14\n");
+  print("TEST 13\n");
   var alreadyOpened := cp.openReservedArea();
   print("Reserved Area is opened: ");
   print(alreadyOpened);
   print(" (fails to open, because it is already opened)");
   print("\n-----------------------------\n");
 
-
   ////////////// Testing the closeCarPark()
   ////// Testing if all the cars are removed when the function is called
-  print("TEST 15\n");
+  print("TEST 14\n");
   cp.closeCarPark();
   print("The carPark has been closed!");
   cp.PrintParkingPlan();
