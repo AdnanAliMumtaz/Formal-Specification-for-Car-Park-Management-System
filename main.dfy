@@ -1,23 +1,25 @@
 
 class {:autocontracts} CarPark {
 
-  const MAX_CAPACITY: nat
-  const MIN_FREE_SPACES := 5
-  const reservedCapacity: nat
-  const nonReservedCapacity: nat
-  var isWeekend: bool
-  var reservedArea: set<nat>
-  var nonReservedArea: set<nat>
-  var subscription: set<nat>
+  const MAX_CAPACITY: nat // It represents the full capacity of carpark include non-reserved and reserved area
+  const MIN_FREE_SPACES := 5 // It represents the minimum number of spaces that must remain available in non-reserved area
+  const reservedCapacity: nat // It  represent the maximum capacity fo the reserved area
+  const nonReservedCapacity: nat // It represents the maximum capacity of the non-reserved area
 
+  var isWeekend: bool // This keeps track of whether it is currently a weekend.
+  var reservedArea: set<nat> // This is a set of natural numbers (nat) representing the reserved parking spaces.
+  var nonReservedArea: set<nat> // This is a set of natural numbers (nat) representing the non-reserved parking spaces.
+  var subscription: set<nat> // This is a set of natural numbers (nat) representing the subscriptions(cars that are allowed to park in reserved area on weekdays).
+
+
+  // Setting up a CarPark
   constructor(maxSize: nat, maxReserved: nat)
-    requires maxSize - 5 >= maxReserved
-    requires maxReserved > 0
+    requires maxSize - 6 >= maxReserved // ---Require Work
+    requires maxReserved > 0 // There should atleast 1 space in the reserved area to set up CarPark
 
-    ensures isWeekend == false
-    ensures reservedArea == nonReservedArea == {}
-    ensures |subscription| == 0
-    ensures MAX_CAPACITY == nonReservedCapacity + reservedCapacity
+    ensures isWeekend == false // Ensures that it is weekday when setting up a CarPark.
+    ensures reservedArea == nonReservedArea == subscription == {} // Ensures that reservedArea, nonReservedArea and subscription are all empty after excution of constructor.
+    ensures MAX_CAPACITY == nonReservedCapacity + reservedCapacity // Ensures that the reserved and non-reserved capacities should be no more or less than maximum CarPark capacity.  ---Requires Work
   {
     MAX_CAPACITY := maxSize;
     nonReservedCapacity := maxSize - maxReserved;
@@ -28,82 +30,95 @@ class {:autocontracts} CarPark {
     subscription := {};
   }
 
+  // Predicate set for pre and post conditions - Rules that must be true throughtout the excution of the program
   ghost predicate Valid()
   {
-    // Rules that must be true throughtout the excution of the program
-    MAX_CAPACITY == (nonReservedCapacity + reservedCapacity)
+    MAX_CAPACITY == (nonReservedCapacity + reservedCapacity) // Ensure that the combined capacity of the non-reserved and reserved areas equals the maximum capacity of the car park.
     &&
-    MAX_CAPACITY >= (|nonReservedArea| + |reservedArea|)
+    MAX_CAPACITY >= (|nonReservedArea| + |reservedArea|) // Ensure that the total size of the non-reserved and reserved areas does not exceed the maximum capacity of the car park.
     &&
-    |nonReservedArea| <= nonReservedCapacity - MIN_FREE_SPACES // As long as the non-reserved area has the capacity
+    |nonReservedArea| <= nonReservedCapacity - MIN_FREE_SPACES // Ensure that the size of the non-reserved area does not exceed its capacity minus the minimum free spaces required to cater idiot drivers.
     &&
-    |reservedArea| <= reservedCapacity
+    |reservedArea| <= reservedCapacity // Ensure that the size of the reserved area does not exceed its maximum capacity.
     &&
-    |subscription| <= reservedCapacity
+    |subscription| <= reservedCapacity // Ensure that the number of subscriptions does not exceed the maximum capacity of the reserved area.
     &&
-
-    // |reservedArea| <= |subscription|
-    // &&
-    nonReservedArea * reservedArea == {} // The same Car must not be in non-reserved or reserved at the same time
+    nonReservedArea * reservedArea == {} // Ensure that no car is parked simultaneously in both the non-reserved and reserved areas.
     &&
-    nonReservedArea * subscription == {} // The car must is the nonreservedArea must not be in the subscription
-    // &&
-    // (reservedArea \ subscription == {} )
-    // !(isWeekend && (reservedArea \ subscription != {}))
-
+    nonReservedArea * subscription == {} // Ensures no car is simultaneously parked in the non-reserved area and also has a subscription
   }
 
-  // To report on the number of non-reserved free spaces currently available
+  // To report on the number of non-reserved free spaces currently available. --DONE
   method checkAvailability() returns(availablity: nat)
+    requires true
 
     modifies this
 
-    // Cases
-    ensures !isWeekend ==> (availablity == (nonReservedCapacity - |nonReservedArea|))
-    ensures isWeekend ==> (availablity == (MAX_CAPACITY - (|nonReservedArea| + |reservedArea|)))
+    // Weekday Case
+    ensures !isWeekend ==> (availablity == (nonReservedCapacity - |nonReservedArea|)) // Ensures that if it is a weekday, it returns the nonReservedArea spaces available.
+
+    //Weekend Case
+    ensures isWeekend ==> (availablity == (MAX_CAPACITY - (|nonReservedArea| + |reservedArea|))) // Ensures that if it is a weekend, it returns the spaces available in nonreserved and reserved areas.
 
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend)
-    ensures nonReservedArea == old(nonReservedArea)
-    ensures reservedArea == old(reservedArea)
-    ensures subscription == old(subscription)
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend isn't changed after the excution of method
+    ensures nonReservedArea == old(nonReservedArea) // Ensures nonReservedAre isn't changed after the excution of method
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea isn't changed after the excution of method
+    ensures subscription == old(subscription) // Ensures subscription isn't changed after the excution of method
   {
     if (isWeekend)
     {
+      // Calculate available spaces for weekends in only nonReserved Area
       availablity := MAX_CAPACITY - (|nonReservedArea| + |reservedArea|);
     }
     else {
+      // Calculate available spaces for weekdays in both nonReserved and Reserved Area
       availablity := nonReservedCapacity - |nonReservedArea|;
     }
   }
 
   // To allow any car without a reservation to enter the car park
+  // It will allow any car without a reservation to enter the carpark regardless of a weekend or weekday
+  // 
   method enterCarPark(carID: nat) returns(success: bool)
+    // Cars must be without the subscription
+    // Non-reserved area must not be full (Atleast 5 spaces should be remaining)
+    // Cars must not be already in nonReserved Area or Reserved Area
 
+    requires true
     modifies this
 
     // Good Cases
-    ensures carID !in old(subscription) && carID !in old(nonReservedArea) && (carID !in old(reservedArea))  && (old(|nonReservedArea|) < (nonReservedCapacity - 5)) ==> success
-    ensures success ==> nonReservedArea == old(nonReservedArea) + {carID}
+    ensures (carID !in old(subscription) && // Ensures car does not have subscription for reserved area.
+             carID !in old(nonReservedArea) && // Ensures car is not be already parked in non-reserved area.
+             (carID !in old(reservedArea))  && // Ensures car is not be already parked in reserved area.
+             (old(|nonReservedArea|) < (nonReservedCapacity - MIN_FREE_SPACES))) ==> success // Ensures car only enters when there is space available in the non-reserved area.
+    ensures success ==> nonReservedArea == old(nonReservedArea) + {carID} // Ensures upon a successful entry operation, a car has been added to the non-reserved area.
 
     // Bad Cases
-    ensures carID in old(nonReservedArea) ==> !success
-    ensures carID in old(reservedArea) ==> !success
-    ensures carID in old(subscription) ==> !success
-    ensures old(|nonReservedArea|) >= (nonReservedCapacity - 5) ==> !success
-    ensures !success ==> nonReservedArea == old(nonReservedArea)
+    ensures carID in old(nonReservedArea) ==> !success // Ensures a car already parked in non-reserved area cannot enter again.
+    ensures carID in old(reservedArea) ==> !success // Ensures a car is already parked in reserved area cannot enter non-reserved area.
+    ensures carID in old(subscription) ==> !success // Ensures a subscribed car cannot enter the non-reserved area.
+    ensures old(|nonReservedArea|) >= (nonReservedCapacity - MIN_FREE_SPACES) ==> !success // Ensures no car can enter if the non-reserved area is full.
+    ensures !success ==> nonReservedArea == old(nonReservedArea) // Ensures non-reserved area remains unchanged if entry fails.
 
     // Preservation of Other State Properties
-    ensures isWeekend == old(isWeekend)
-    ensures reservedArea == old(reservedArea)
-    ensures subscription == old(subscription)
+    ensures isWeekend == old(isWeekend) // Ensures isWeekend remains unchanged after the method execution.
+    ensures reservedArea == old(reservedArea) // Ensures reservedArea remains unchanged after the method execution.
+    ensures subscription == old(subscription) // Ensures subscription remains unchanged after the method execution.
   {
-    if ( carID !in nonReservedArea && carID !in reservedArea && carID !in subscription && (|nonReservedArea| < (nonReservedCapacity - 5)))
+    // Checks if the car is eligible to enter the non-reserved area.
+    if ( (carID !in nonReservedArea) && // Check if the car is not already parked in the non-reserved area.
+         (carID !in reservedArea) && // Check if the car is not already parked in the reserved area.
+         (carID !in subscription) && // Check if the car is not subscribed.
+         (|nonReservedArea| < (nonReservedCapacity - MIN_FREE_SPACES))) // Check if there are enough free spaces in the non-reserved area.
     {
+      // Add the car to the non-reserved area and set success to true.
       nonReservedArea := nonReservedArea + {carID};
       success := true;
     }
     else {
+              // If not eligible, set success to false.
       success := false;
     }
   }
@@ -376,7 +391,7 @@ method Main()
   print(carID6);
   print("\n-----------------------------\n");
 
-  ////////////// Testing the checkAvailability() 
+  ////////////// Testing the checkAvailability()
   ////// Testing if the availability status is correct on Weekday -- MAYNEEDSOMEWORK
   print("TEST 8\n");
   var nonReservedAvailability := cp.checkAvailability();
