@@ -429,13 +429,13 @@ method Main()
   var carID6 := cp.enterReservedCarPark(9);
   print("-carID6(9) has entered the Reserved Area: ");
   print(carID6);
+  cp.PrintParkingPlan();
   print("\n");
 
   // Makeing a car leave from the reserved area.
   var carID6Left := cp.leaveCarPark(9);
-  print("-carID6(9) has left the carPark: ");
+  print("\n-carID6(9) has left the carPark: ");
   print(carID6Left);
-
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
@@ -446,7 +446,7 @@ method Main()
   print("\n");
 
   var nonReservedAvailability := cp.checkAvailability();
-  print("Current Non-Reserved Area Availability (on Weekday): ");
+  print("\nCurrent Non-Reserved Area Availability (on Weekday): ");
   print(nonReservedAvailability);
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
@@ -466,7 +466,7 @@ method Main()
   var carID1Subscription := cp.makeSubscription(5);
   print("-carID1(5) has registered as having a reserved space: ");
   print(carID1Subscription);
-  print(" (fails to make a subscription, because it is already parked in Non-Reserved Area)");
+  print(" (fails to make a subscription, as it is already parked in Non-Reserved Area)");
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
@@ -476,7 +476,7 @@ method Main()
   var carID7 := cp.enterReservedCarPark(231);
   print("-carID7(231) has entered the Reserved Area: ");
   print(carID7);
-  print(" (fails to enter as doesn't have subscription)");
+  print(" (fails to enter as the car doesn't have subscription)");
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
@@ -489,17 +489,20 @@ method Main()
   var carID8Duplicate := cp.enterReservedCarPark(9);
   print("-carID8(9) has entered the Reserved Area: ");
   print(carID8Duplicate);
-  print(" (fails because same car can't enter reserved area again)");
+  print(" (fails as same car can't enter reserved area again)");
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
   ////// Testing if a car without the subscription can enter the reserved area on weekend.
   print("TEST 12\n");
   var isReservedOpen := cp.openReservedArea();
+  print("Reserved Area is open: ");
+  print(isReservedOpen);
+  print("\n");
   var carID9 := cp.enterReservedCarPark(98);
   print("-carID9(98) has entered the Reserved Area: ");
   print(carID9);
-  print(" (enters without making a subscription, because it is a Weekend!)");
+  print(" (enters without making a subscription, because it is a Weekend-Reserved Area is opened.)");
   cp.PrintParkingPlan();
   print("\n-----------------------------\n");
 
