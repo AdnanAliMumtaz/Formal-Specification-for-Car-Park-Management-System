@@ -78,5 +78,7 @@ print("-carID1(5) has entered the Non-Reserved Area: ");
 print(carID1);
 cp.PrintParkingPlan();
 print("\n-----------------------------\n");
+```
 
-// Further tests and usage scenarios...
+## Testing
+Various test scenarios have been implemented to ensure the proper functioning of the system. These include checking availability, handling car park entries and exits, managing subscriptions, and switching between weekday and weekend operations.
