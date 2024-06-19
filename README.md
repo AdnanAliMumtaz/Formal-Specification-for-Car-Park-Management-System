@@ -26,26 +26,21 @@ The CarPark Management System allows users to efficiently manage parking spaces 
 - **Car Park Closure**: Reset the car park at closing time, removing all parked cars.
 
 ## Class and Methods
-
 ### Class `CarPark`
-
 #### Constants
-
 - `MAX_CAPACITY`: Full capacity of the car park, including reserved and non-reserved areas.
 - `MIN_FREE_SPACES`: Minimum number of spaces that must remain available in the non-reserved area.
 - `reservedCapacity`: Maximum capacity of the reserved area.
 - `nonReservedCapacity`: Maximum capacity of the non-reserved area.
 
 #### Variables
-
 - `isWeekend`: Tracks if it's currently a weekend.
 - `reservedArea`: Set of reserved parking spaces.
 - `nonReservedArea`: Set of non-reserved parking spaces.
 - `subscription`: Set of cars with subscriptions.
 
 #### Constructor
-
-- `constructor(maxSize: nat, maxReserved: nat)`: Initializes the car park.
+- `constructor(maxSize: nat, maxReserved: nat)`: Initialises the car park.
 
 #### Methods
 
